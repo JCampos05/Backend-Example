@@ -1,8 +1,8 @@
 {
     "compilerOptions": {
-        "target": "es2021",
-        "module": "commonjs",
-        "moduleResolution": "node",
+        "target": "es2022",
+        "module": "node16",
+        "moduleResolution": "node16",
         "outDir": "./dist",
         "rootDir": "./",
         "strict": true,
@@ -16,5 +16,8 @@
     "include": [
         "src/**/*",
         "server_config.json"
-    ]
+    ],
+    "ts-node": {
+        "files": true
+    }
 }

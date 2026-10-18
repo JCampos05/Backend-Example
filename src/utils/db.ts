@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm';
+import { DataSource, EntityTarget, ObjectLiteral, Repository } from 'typeorm';
 import { IServerConfig } from './config';
 import config from '../../server_config.json';
 import { Roles } from '../components/roles/roles.entity';
@@ -9,6 +9,7 @@ import { Comments } from '../components/comments/comments.entity';
 
 export class DatabaseUtil {
     public server_config: IServerConfig = config;
+    private dataSource!: DataSource;
 
     constructor() {
         this.connectDatabase();
@@ -16,7 +17,7 @@ export class DatabaseUtil {
 
     private connectDatabase(): void {
         const db_config = this.server_config.db_config;
-        const AppDataSource = new DataSource({
+        this.dataSource = new DataSource({
             type: 'postgres',
             host: db_config.host,
             port: db_config.port,
@@ -28,10 +29,14 @@ export class DatabaseUtil {
             logging: false
         });
 
-        AppDataSource.initialize()
+        this.dataSource.initialize()
             .then(() => {
                 console.log('Connected to the database with all entities synchronized');
             })
             .catch((error) => console.log('Error connecting to database:', error));
+    }
+
+    public getRepository<T extends ObjectLiteral>(entity: EntityTarget<T>): Repository<T> {
+        return this.dataSource.getRepository(entity);
     }
 }
