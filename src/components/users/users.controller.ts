@@ -6,6 +6,7 @@ import { bcryptCompare, encryptString, SERVER_CONST } from '../../utils/common';
 import { hasPermission } from '../../utils/auth.util';
 import { sendMail } from '../../utils/email.util';
 import { DatabaseUtil } from '../../utils/db';
+import { CacheUtil } from '../../utils/cache.util';
 
 // Quita la contraseña de un usuario o de una lista de usuarios
 const sanitize = (data: any): any => {
@@ -45,37 +46,60 @@ export class UsersController {
         res.status(result.statusCode).json(result);
     }
 
-    // ---------- Detalle ----------
+    // ---------- Detalle (con caché Cache-Aside) ----------
     public async getOneHandler(req: Request, res: Response): Promise<void> {
         if (!hasPermission(req.user?.rights, 'get_details_user')) return forbidden(res, 'No tiene permisos para ver el usuario');
 
-        const service = new UsersService();
-        const result = await service.findOne(req.params.id as string);
+        const userId = req.params.id as string;
 
-        if (result.statusCode === 200) result.data = sanitize(result.data);
+        // 1. Intentar recuperar desde Redis
+        const cached = await CacheUtil.get('User', userId);
+        if (cached) {
+            res.status(200).json({ statusCode: 200, status: 'success', data: cached });
+            return;
+        }
+
+        // 2. Cache miss: consultar PostgreSQL
+        const service = new UsersService();
+        const result = await service.findOne(userId);
+
+        if (result.statusCode === 200) {
+            result.data = sanitize(result.data);
+            // 3. Guardar en caché (sin contraseña) para las próximas peticiones
+            CacheUtil.set('User', userId, result.data);
+        }
         res.status(result.statusCode).json(result);
     }
 
-    // ---------- Edición ----------
+    // ---------- Edición (invalida caché) ----------
     public async updateHandler(req: Request, res: Response): Promise<void> {
         if (!hasPermission(req.user?.rights, 'edit_user')) return forbidden(res, 'No tiene permisos para editar usuarios');
 
+        const userId = req.params.id as string;
         const service = new UsersService();
         const body = { ...req.body };
         if (body.password) body.password = await encryptString(body.password);
 
-        const result = await service.update(req.params.id as string, body);
+        const result = await service.update(userId, body);
 
-        if (result.statusCode === 200) result.data = sanitize(result.data);
+        if (result.statusCode === 200) {
+            result.data = sanitize(result.data);
+            await CacheUtil.remove('User', userId);
+        }
         res.status(result.statusCode).json(result);
     }
 
-    // ---------- Borrado ----------
+    // ---------- Borrado (invalida caché) ----------
     public async deleteHandler(req: Request, res: Response): Promise<void> {
         if (!hasPermission(req.user?.rights, 'delete_user')) return forbidden(res, 'No tiene permisos para eliminar usuarios');
 
+        const userId = req.params.id as string;
         const service = new UsersService();
-        const result = await service.delete(req.params.id as string);
+        const result = await service.delete(userId);
+
+        if (result.statusCode === 200) {
+            await CacheUtil.remove('User', userId);
+        }
         res.status(result.statusCode).json(result);
     }
 
@@ -191,5 +215,19 @@ export class UsersUtil {
     public static async getUserByEmail(email: string): Promise<Users | null> {
         const repo = new DatabaseUtil().getRepository(Users);
         return repo.findOne({ where: { email } });
+    }
+
+    // Precarga masiva de usuarios (sin contraseña) en Redis al arrancar
+    public static async putAllUsersInCache(): Promise<void> {
+        const result = await new UsersService().findAll({});
+        if (result.statusCode === 200 && Array.isArray(result.data)) {
+            const users = sanitize(result.data) as Users[];
+            for (const user of users) {
+                await CacheUtil.set('User', user.user_id, user);
+            }
+            console.log(`${users.length} usuarios cargados en la caché`);
+        } else {
+            console.error(`Error en putAllUsersInCache: ${result.message}`);
+        }
     }
 }
