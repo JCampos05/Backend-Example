@@ -1,8 +1,8 @@
 import { Express, Router } from 'express';
 import { RoleRoutes } from '../components/roles/roles.routes';
-//import { UserRoutes } from '../components/users/users_routes';
+import { UserRoutes } from '../components/users/users.routes';
 //import { ProjectRoutes } from '../components/projects/projects_routes';
-//import { TaskRoutes } from '../components/tasks/tasks_routes';
+import { TaskRoutes } from '../components/tasks/tasks.routes';
 //import { CommentRoutes } from '../components/comments/comments_routes';
 
 export class Routes {
@@ -11,9 +11,9 @@ export class Routes {
     constructor(app: Express) {
         const routeClasses = [
             RoleRoutes,
-            //UserRoutes,
+            UserRoutes,
             //ProjectRoutes,
-            //TaskRoutes,
+            TaskRoutes,
             //CommentRoutes
         ];
 

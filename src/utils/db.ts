@@ -1,4 +1,4 @@
-import { DataSource, EntityTarget, ObjectLiteral, Repository } from 'typeorm';
+import { DataSource, EntityTarget, ObjectLiteral, QueryRunner, Repository } from 'typeorm';
 import { IServerConfig } from './config';
 import config from '../../server_config.json';
 import { Roles } from '../components/roles/roles.entity';
@@ -38,5 +38,9 @@ export class DatabaseUtil {
 
     public getRepository<T extends ObjectLiteral>(entity: EntityTarget<T>): Repository<T> {
         return this.dataSource.getRepository(entity);
+    }
+
+    public createQueryRunner(): QueryRunner {
+        return this.dataSource.createQueryRunner();
     }
 }

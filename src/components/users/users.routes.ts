@@ -1,6 +1,10 @@
+import { Express } from 'express';
 import { body } from 'express-validator';
+import { UsersController } from './users.controller';
+import { authorize } from '../../utils/auth.util';
+import { validate } from '../../utils/validator';
 
-export const validUserInput = [
+const validUserInput = [
     body('fullname').trim().notEmpty().withMessage('El nombre completo es obligatorio'),
     body('username').trim().notEmpty().isLength({ min: 4, max: 30 }).withMessage('El usuario debe tener entre 4 y 30 caracteres'),
     body('email').isEmail().withMessage('Debe proporcionar un correo electrónico válido'),
@@ -10,3 +14,28 @@ export const validUserInput = [
         .withMessage('La contraseña debe incluir al menos una mayúscula, una minúscula, un número y un símbolo especial'),
     body('role_ids').isArray().withMessage('Debe proporcionar un arreglo de UUIDs de roles válidos'),
 ];
+
+export class UserRoutes {
+    private baseEndPoint = '/api/users';
+
+    constructor(app: Express) {
+        const controller = new UsersController();
+
+        // Rutas públicas (sin token). Van antes que '/:id'.
+        app.post(`${this.baseEndPoint}/login`, controller.login);
+        app.post(`${this.baseEndPoint}/forgot-password`, controller.forgotPassword);
+        app.post(`${this.baseEndPoint}/reset-password`, controller.resetPassword);
+
+        // Rutas protegidas
+        app.post(`${this.baseEndPoint}/change-password`, authorize, controller.changePassword);
+
+        app.route(this.baseEndPoint)
+            .get(authorize, controller.getAllHandler)
+            .post(authorize, validate(validUserInput), controller.addHandler);
+
+        app.route(`${this.baseEndPoint}/:id`)
+            .get(authorize, controller.getOneHandler)
+            .put(authorize, validate(validUserInput), controller.updateHandler)
+            .delete(authorize, controller.deleteHandler);
+    }
+}
