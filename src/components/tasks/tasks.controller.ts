@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { TaskService } from './tasks.service';
 import { hasPermission } from '../../utils/auth.util';
+import { Tasks } from './tasks.entity';
+import { ProjectsUtil } from '../../utils/projects.util';
+import { NotificationUtil } from '../../utils/notification.util';
 
 const forbidden = (res: Response, message: string): void => {
     res.status(403).json({ statusCode: 403, status: 'error', message });
@@ -9,7 +12,13 @@ const forbidden = (res: Response, message: string): void => {
 export class TaskController {
     public async addHandler(req: Request, res: Response): Promise<void> {
         if (!hasPermission(req.user?.rights, 'add_task')) return forbidden(res, 'No tiene permisos para crear tareas');
+
         const result = await new TaskService().createTask(req.body);
+        if (result.statusCode === 201 && result.data) {
+            notifyTaskCreated(result.data as Tasks).catch((err) =>
+                console.error('[Notificación] No se pudo encolar:', err.message)
+            );
+        }
         res.status(result.statusCode).json(result);
     }
 
@@ -44,3 +53,16 @@ export class TaskController {
         res.status(result.statusCode).json(result);
     }
 }
+
+const notifyTaskCreated = async (task: Tasks): Promise<void> => {
+    const emails = await ProjectsUtil.getProjectMemberEmails(task.project_id, task.user_id ? [task.user_id] : []);
+    await Promise.all(
+        emails.map((email) =>
+            NotificationUtil.enqueueEmail(
+                email,
+                `Nueva tarea creada: ${task.name}`,
+                `<p>Hola, se ha creado la tarea <b>${task.name}</b> en tu proyecto.</p>`
+            )
+        )
+    );
+};

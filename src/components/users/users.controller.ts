@@ -4,7 +4,7 @@ import { UsersService } from './users.service';
 import { Users } from './users.entity';
 import { bcryptCompare, encryptString, SERVER_CONST } from '../../utils/common';
 import { hasPermission } from '../../utils/auth.util';
-import { sendMail } from '../../utils/email.util';
+import { NotificationUtil } from '../../utils/notification.util';
 import { DatabaseUtil } from '../../utils/db';
 import { CacheUtil } from '../../utils/cache.util';
 
@@ -175,7 +175,7 @@ export class UsersController {
             <a href="${resetLink}">Restablecer Contraseña</a>
             <p>Si no solicitaste este cambio, ignora este correo.</p>`;
 
-        const sent = await sendMail(email, 'Recuperación de Contraseña - Sistema PMS', html);
+        const sent = await NotificationUtil.sendEmail(email, 'Recuperación de Contraseña - Sistema PMS', html);
         if (sent) {
             res.status(200).json({ statusCode: 200, status: 'success', message: 'Enlace de recuperación enviado al correo electrónico' });
         } else {
