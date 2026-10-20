@@ -15,6 +15,10 @@ export class BaseService<T extends ObjectLiteral> {
         this.repository = repository;
     }
 
+    protected get pk(): string {
+        return this.repository.metadata.primaryColumns[0].propertyName;
+    }
+
     public async create(data: any): Promise<IApiResponse<T>> {
         try {
             const entity = this.repository.create(data);
@@ -39,7 +43,7 @@ export class BaseService<T extends ObjectLiteral> {
 
     public async findOne(id: string): Promise<IApiResponse<T>> {
         try {
-            const result = await this.repository.findOne({ where: { id } as any });
+            const result = await this.repository.findOne({ where: { [this.pk]: id } as any });
             if (!result) {
                 return { statusCode: 404, status: 'error', message: 'Recurso no encontrado' };
             }
@@ -51,7 +55,7 @@ export class BaseService<T extends ObjectLiteral> {
 
     public async update(id: string, data: any): Promise<IApiResponse<T>> {
         try {
-            const existing = await this.repository.findOne({ where: { id } as any });
+            const existing = await this.repository.findOne({ where: { [this.pk]: id } as any });
             if (!existing) {
                 return { statusCode: 404, status: 'error', message: 'Recurso no encontrado para actualizar' };
             }

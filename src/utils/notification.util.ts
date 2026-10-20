@@ -45,4 +45,18 @@ export class NotificationUtil {
             return false;
         }
     }
+
+    public static async notifyTaskAssigned(to: string, taskName: string): Promise<boolean> {
+        try {
+            await NotificationUtil.enqueueEmail(
+                to,
+                `Tarea asignada: ${taskName}`,
+                `<p>Se te ha asignado la tarea <b>${taskName}</b>.</p>`
+            );
+            return true;
+        } catch (error: any) {
+            console.error(`[ERROR] No se pudo encolar la notificación: ${error.message}`);
+            return false;
+        }
+    }
 }

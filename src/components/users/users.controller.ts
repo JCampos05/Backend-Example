@@ -3,7 +3,7 @@ import * as jwt from 'jsonwebtoken';
 import { UsersService } from './users.service';
 import { Users } from './users.entity';
 import { bcryptCompare, encryptString, SERVER_CONST } from '../../utils/common';
-import { hasPermission } from '../../utils/auth.util';
+import { hasPermission, AuthUtil } from '../../utils/auth.util';
 import { NotificationUtil } from '../../utils/notification.util';
 import { DatabaseUtil } from '../../utils/db';
 import { CacheUtil } from '../../utils/cache.util';
@@ -106,28 +106,19 @@ export class UsersController {
     // ---------- Login (público) ----------
     public async login(req: Request, res: Response): Promise<void> {
         const { email, password } = req.body;
-        const service = new UsersService();
-        const result = await service.findAll({ email });
+        const invalid = (): void => {
+            res.status(401).json({ statusCode: 401, status: 'error', message: 'Credenciales inválidas' });
+        };
 
-        if (!result.data || (result.data as Users[]).length === 0) {
-            res.status(404).json({ statusCode: 404, status: 'error', message: 'Correo electrónico no encontrado' });
-            return;
-        }
+        const result = await new UsersService().findAll({ email });
+        if (!result.data || (result.data as Users[]).length === 0) return invalid();
 
         const user = (result.data as Users[])[0];
-        const isPasswordValid = await bcryptCompare(password, user.password);
-        if (!isPasswordValid) {
-            res.status(400).json({ statusCode: 400, status: 'error', message: 'Contraseña incorrecta' });
-            return;
-        }
+        if (!(await bcryptCompare(password, user.password))) return invalid();
 
         const payload = { user_id: user.user_id, email: user.email, username: user.username };
-        const accessToken = jwt.sign(payload, SERVER_CONST.JWTSECRET, {
-            expiresIn: SERVER_CONST.ACCESS_TOKEN_EXPIRY_TIME_SECONDS,
-        });
-        const refreshToken = jwt.sign(payload, SERVER_CONST.JWTSECRET, {
-            expiresIn: SERVER_CONST.REFRESH_TOKEN_EXPIRY_TIME_SECONDS,
-        });
+        const accessToken = AuthUtil.generateAccessToken(payload);
+        const refreshToken = AuthUtil.generateRefreshToken(payload);
 
         res.status(200).json({ statusCode: 200, status: 'success', data: { accessToken, refreshToken } });
     }

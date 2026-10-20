@@ -36,3 +36,20 @@ export const hasPermission = (userRights: string[] | undefined, requiredRight: s
     if (!userRights || !Array.isArray(userRights)) return false;
     return userRights.includes(requiredRight);
 };
+export class AuthUtil {
+    public static generateAccessToken(payload: object): string {
+        return jwt.sign(payload, SERVER_CONST.JWTSECRET, {
+            expiresIn: SERVER_CONST.ACCESS_TOKEN_EXPIRY_TIME_SECONDS,
+        });
+    }
+
+    public static generateRefreshToken(payload: object): string {
+        return jwt.sign(payload, SERVER_CONST.JWTSECRET, {
+            expiresIn: SERVER_CONST.REFRESH_TOKEN_EXPIRY_TIME_SECONDS,
+        });
+    }
+
+    public static verifyToken(token: string): jwt.JwtPayload {
+        return jwt.verify(token, SERVER_CONST.JWTSECRET) as jwt.JwtPayload;
+    }
+}

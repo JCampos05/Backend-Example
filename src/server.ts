@@ -1,9 +1,8 @@
-import express, { Express, Request, Response } from 'express';
-import bodyParser from 'body-parser';
+import { Express } from 'express';
 import { IServerConfig } from './utils/config';
 import config from '../server_config.json';
-import { Routes } from './routes/index';
 import { DatabaseUtil } from './utils/db';
+import { createApp } from './app';
 
 export class ExpressServer {
     public static server: any = null;
@@ -11,20 +10,7 @@ export class ExpressServer {
 
     constructor() {
         const port = this.server_config.port ?? 3000;
-        const app: Express = express();
-
-        app.use(bodyParser.urlencoded({ extended: false }));
-        app.use(bodyParser.json());
-
-        app.get('/ping', (req: Request, res: Response) => {
-            res.send('pong');
-        });
-
-        // Conectar rutas centralizadas
-        const routes = new Routes(app);
-        if (routes) {
-            console.log('Server Routes started for server');
-        }
+        const app: Express = createApp();
 
         // Conectar base de datos
         new DatabaseUtil();

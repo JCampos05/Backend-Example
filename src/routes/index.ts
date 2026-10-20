@@ -1,20 +1,20 @@
 import { Express, Router } from 'express';
 import { RoleRoutes } from '../components/roles/roles.routes';
 import { UserRoutes } from '../components/users/users.routes';
-//import { ProjectRoutes } from '../components/projects/projects_routes';
+import { ProjectRoutes } from '../components/projects/projects.routes';
 import { TaskRoutes } from '../components/tasks/tasks.routes';
-//import { CommentRoutes } from '../components/comments/comments_routes';
+import { CommentRoutes } from '../components/comments/comments.routes';
 
 export class Routes {
     public router!: Router;
 
     constructor(app: Express) {
-        const routeClasses = [
+        const routeClasses: Array<new (app: Express) => unknown> = [
             RoleRoutes,
             UserRoutes,
-            //ProjectRoutes,
+            ProjectRoutes,
             TaskRoutes,
-            //CommentRoutes
+            CommentRoutes,
         ];
 
         for (const RouteClass of routeClasses) {
@@ -22,7 +22,7 @@ export class Routes {
                 new RouteClass(app);
                 console.log(`Router : ${RouteClass.name} - Connected`);
             } catch (error) {
-                console.log(`Router : ${RouteClass.name} - Failed`);
+                console.log(`Router : ${RouteClass.name} - Failed`, error);
             }
         }
     }
