@@ -1,3 +1,4 @@
+import { Request, Response } from 'express';
 import { In } from 'typeorm';
 import { Rights } from '../../utils/common';
 import { Roles } from './roles.entity';

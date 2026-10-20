@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import 'reflect-metadata';
 import cluster from 'cluster';
 import os from 'os';

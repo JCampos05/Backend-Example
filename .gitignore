@@ -5,3 +5,4 @@ dist/
 .env.production
 *.md
 server_config.json
+docker/

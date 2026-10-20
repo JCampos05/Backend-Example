@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import 'reflect-metadata';
 import { NotificationUtil } from '../utils/notification.util';
 import { QueueWorker } from './queue.worker';

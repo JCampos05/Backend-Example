@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "worker": "ts-node src/workers/worker_main.ts"
+    "worker": "ts-node src/workers/worker_main.ts",
+    "dev": "ts-node src/main.ts"
   },
   "keywords": [],
   "author": "",
