@@ -1,8 +1,11 @@
 node_modules/
 dist/
+build/
+binaries/
 .env
 .env.example
 .env.production
 *.md
 server_config.json
 docker/
+ecosystem.config.js

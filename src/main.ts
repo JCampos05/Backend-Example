@@ -7,7 +7,7 @@ import { CacheUtil } from './utils/cache.util';
 import { UsersUtil } from './components/users/users.controller';
 
 if (cluster.isPrimary) {
-    const numCPUs = os.cpus().length;
+    const numCPUs = Math.min(os.cpus().length, Number(process.env.WORKERS ?? 4));
     console.log(`Master process ${process.pid} is running. Forking for ${numCPUs} CPUs...`);
 
     for (let i = 0; i < numCPUs; i++) {
