@@ -4,6 +4,7 @@ import { UserRoutes } from '../components/users/users.routes';
 import { ProjectRoutes } from '../components/projects/projects.routes';
 import { TaskRoutes } from '../components/tasks/tasks.routes';
 import { CommentRoutes } from '../components/comments/comments.routes';
+import { MetricsRoutes } from '../components/metrics/metrics.routes';
 
 export class Routes {
     public router!: Router;
@@ -15,6 +16,7 @@ export class Routes {
             ProjectRoutes,
             TaskRoutes,
             CommentRoutes,
+            MetricsRoutes
         ];
 
         for (const RouteClass of routeClasses) {

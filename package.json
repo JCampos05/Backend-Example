@@ -13,7 +13,9 @@
     "package": "node scripts/package.js",
     "test": "mocha",
     "test:coverage": "nyc mocha",
-    "audit-worker": "ts-node src/workers/main.audit.ts"
+    "audit-worker": "ts-node src/workers/main.audit.ts",
+    "analytics-worker": "ts-node src/workers/main.analytics.ts",
+    "analytics:rebuild": "ts-node src/scripts/rebuild.analytics.ts"
   },
   "keywords": [],
   "author": "",
