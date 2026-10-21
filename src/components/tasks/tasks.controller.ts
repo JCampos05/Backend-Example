@@ -7,6 +7,7 @@ import { CreateTaskUseCase } from '../../use-cases/create.task.usecase';
 import { buildCreateTaskUseCase } from '../../infraestructure/composition';
 import { DomainValidationError, NotFoundError } from '../../domain/errors';
 import { Task } from '../../domain/entities/task.model';
+import { EventPublisher, TaskEvents } from '../../messaging/event.publisher';
 
 const forbidden = (res: Response, message: string): void => {
     res.status(403).json({ statusCode: 403, status: 'error', message });
@@ -30,7 +31,7 @@ const toApiTask = (t: Task) => ({
 });
 
 export class TaskController {
-    constructor(private readonly createTask?: CreateTaskUseCase) {}
+    constructor(private readonly createTask?: CreateTaskUseCase) { }
 
     public addHandler = async (req: Request, res: Response): Promise<void> => {
         if (!hasPermission(req.user?.rights, 'add_task')) return forbidden(res, 'No tiene permisos para crear tareas');
@@ -49,6 +50,13 @@ export class TaskController {
                 supportedFiles: b.supported_files,
             });
             const data = toApiTask(task);
+            void EventPublisher.publish(TaskEvents.Created, {
+                task_id: data.task_id,
+                project_id: data.project_id,
+                name: data.name,
+                user_id: data.user_id,
+                created_by: req.user?.user_id,
+            });
             notifyTaskCreated(data).catch((err) => console.error('[Notificación] No se pudo encolar:', err.message));
             res.status(201).json({ statusCode: 201, status: 'success', data });
         } catch (error: any) {
@@ -83,6 +91,13 @@ export class TaskController {
     public async updateStatusHandler(req: Request, res: Response): Promise<void> {
         if (!hasPermission(req.user?.rights, 'edit_task')) return forbidden(res, 'No tiene permisos para editar tareas');
         const result = await new TaskService().updateTaskStatus(req.params.id as string, req.body.status);
+        if (result.statusCode === 200) {
+            void EventPublisher.publish(TaskEvents.StatusChanged, {
+                task_id: req.params.id,
+                new_status: req.body.status,
+                changed_by: req.user?.user_id,
+            });
+        }
         res.status(result.statusCode).json(result);
     }
 

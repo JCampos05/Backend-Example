@@ -12,13 +12,15 @@
     "obfuscate": "node scripts/obfuscate.js",
     "package": "node scripts/package.js",
     "test": "mocha",
-    "test:coverage": "nyc mocha"
+    "test:coverage": "nyc mocha",
+    "audit-worker": "ts-node src/workers/main.audit.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "amqplib": "^2.2.0",
     "axios": "^1.20.0",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.3.0",
@@ -35,6 +37,7 @@
     "typeorm": "^1.1.2"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.8",
     "@types/bcrypt": "^6.0.0",
     "@types/bull": "^3.15.9",
     "@types/chai": "^4.3.20",
