@@ -5,6 +5,7 @@ import { ProjectRoutes } from '../components/projects/projects.routes';
 import { TaskRoutes } from '../components/tasks/tasks.routes';
 import { CommentRoutes } from '../components/comments/comments.routes';
 import { MetricsRoutes } from '../components/metrics/metrics.routes';
+import { AnalyticsRoutes } from '../components/analytics/analytics.routes';
 
 export class Routes {
     public router!: Router;
@@ -16,7 +17,8 @@ export class Routes {
             ProjectRoutes,
             TaskRoutes,
             CommentRoutes,
-            MetricsRoutes
+            MetricsRoutes,
+            AnalyticsRoutes
         ];
 
         for (const RouteClass of routeClasses) {
