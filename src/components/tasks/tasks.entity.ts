@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Relation } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Relation, Index } from 'typeorm';
 import { Projects } from '../projects/projects.entity';
 
 export enum Status {
@@ -14,6 +14,9 @@ export enum Priority {
 }
 
 @Entity()
+@Index(['project_id'])
+@Index(['user_id'])
+@Index(['project_id', 'status'])
 export class Tasks {
     @PrimaryGeneratedColumn('uuid')
     task_id!: string;
