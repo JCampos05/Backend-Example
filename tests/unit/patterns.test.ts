@@ -19,7 +19,7 @@ describe('Patrón Factory: StorageFactory', () => {
     });
 
     it('lanza error con un tipo no soportado', () => {
-        expect(() => StorageFactory.createStorage('s3' as any)).to.throw('no soportado');
+        expect(() => StorageFactory.createStorage('ftp' as any)).to.throw('no soportado');
     });
 
     it('DiskStorageService copia el archivo y rechaza rutas fuera de su carpeta', async () => {

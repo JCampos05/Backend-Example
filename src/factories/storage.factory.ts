@@ -1,7 +1,8 @@
 import path from 'path';
 import { DiskStorageService, MemoryStorageService, IStorageService } from '../services/storage.service';
+import { S3StorageService } from '../services/s3.storage.service';
 
-export type StorageType = 'local' | 'memory';
+export type StorageType = 'local' | 'memory' | 's3';
 
 export class StorageFactory {
     public static createStorage(type: StorageType): IStorageService {
@@ -9,6 +10,11 @@ export class StorageFactory {
             case 'local': {
                 const uploadDir = process.env.LOCAL_UPLOAD_DIR || path.join(process.cwd(), 'uploads');
                 return new DiskStorageService(uploadDir);
+            }
+            case 's3': {
+                const bucket = process.env.AWS_S3_BUCKET;
+                if (!bucket) throw new Error('Error de configuración: AWS_S3_BUCKET no está definido');
+                return new S3StorageService(bucket);
             }
             case 'memory':
                 return new MemoryStorageService();

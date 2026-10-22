@@ -1,11 +1,19 @@
+# Dependencias y compilados (se regeneran)
 node_modules/
 dist/
 build/
 binaries/
+release/
+
+# Secretos y configuración local: NO subir
 .env
-.env.example
 .env.production
-*.md
+.env.example
 server_config.json
-docker/
-ecosystem.config.js
+*.pem
+docker/ec2-sim/mi_clave_ec2
+docker/ec2-sim/mi_clave_ec2.pub
+
+# Cobertura de pruebas
+coverage/
+.nyc_output/

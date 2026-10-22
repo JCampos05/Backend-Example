@@ -2,46 +2,44 @@ const JavaScriptObfuscator = require('javascript-obfuscator');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const obfuscatorOptions = {
-    target: 'node',
+const options = {
     compact: true,
     controlFlowFlattening: true,
-    controlFlowFlatteningThreshold: 0.5,
-    deadCodeInjection: false,
+    controlFlowFlatteningThreshold: 0.75,
+    deadCodeInjection: true,
+    deadCodeInjectionThreshold: 0.4,
     debugProtection: false,
-    disableConsoleOutput: false, 
+    disableConsoleOutput: false,
     identifierNamesGenerator: 'hexadecimal',
     log: false,
     numbersToExpressions: true,
     renameGlobals: false,
-    selfDefending: false,
+    selfDefending: true,
     simplify: true,
     splitStrings: true,
-    splitStringsChunkLength: 10,
     stringArray: true,
     stringArrayEncoding: ['base64'],
-    stringArrayThreshold: 0.75,
+    stringArrayThreshold: 0.8,
     unicodeEscapeSequence: false,
 };
 
-function obfuscateDirectory(dirPath) {
-    for (const file of fs.readdirSync(dirPath)) {
-        const fullPath = path.join(dirPath, file);
-
-        if (fs.statSync(fullPath).isDirectory()) {
-            obfuscateDirectory(fullPath);
-        } else if (file.endsWith('.js')) {
-            if (file.endsWith('.entity.js')) {
-                console.log(`[Omitido ] ${fullPath} (entidad TypeORM)`);
-                continue;
-            }
-            const source = fs.readFileSync(fullPath, 'utf8');
-            const result = JavaScriptObfuscator.obfuscate(source, obfuscatorOptions);
-            fs.writeFileSync(fullPath, result.getObfuscatedCode(), 'utf8');
-            console.log(`[Ofuscado] ${fullPath}`);
+function obfuscateDirectory(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            obfuscateDirectory(full);
+        } else if (entry.name.endsWith('.js')) {
+            const code = fs.readFileSync(full, 'utf8');
+            fs.writeFileSync(full, JavaScriptObfuscator.obfuscate(code, options).getObfuscatedCode(), 'utf8');
+            console.log(`[Ofuscado] ${full}`);
         }
     }
 }
 
-obfuscateDirectory(path.join(__dirname, '..', 'dist'));
+const target = path.resolve(process.argv[2] || path.join(__dirname, '..', 'build', 'dist'));
+if (!fs.existsSync(target)) {
+    console.error(`No existe la carpeta a ofuscar: ${target}`);
+    process.exit(1);
+}
+obfuscateDirectory(target);
 console.log('Ofuscación completada exitosamente.');

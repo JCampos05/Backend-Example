@@ -2,33 +2,31 @@ const { execSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const root = path.join(__dirname, '..');
+const root = path.resolve(__dirname, '..');
 const VER = require(path.join(root, 'package.json')).version;
 const skipObfuscation = process.argv.includes('--no-obfuscate');
+const build = path.join(root, 'build');
+const binaries = path.join(root, 'binaries');
+const archive = path.join(binaries, `pms_be_${VER}.tgz`);
 
 const run = (cmd) => {
     console.log(`> ${cmd}`);
     execSync(cmd, { cwd: root, stdio: 'inherit' });
 };
-const rm = (p) => fs.rmSync(path.join(root, p), { recursive: true, force: true });
 
 console.log(`Iniciando empaquetado de producción v${VER}`);
 
-rm('build');
-rm('binaries');
-rm('dist');
-fs.mkdirSync(path.join(root, 'build'));
-fs.mkdirSync(path.join(root, 'binaries'));
+fs.rmSync(build, { recursive: true, force: true });
+fs.rmSync(binaries, { recursive: true, force: true });
+fs.mkdirSync(binaries, { recursive: true });
 
-run('npx tsc');
-if (!skipObfuscation) run('node scripts/obfuscate.js');
+// Compila solo src/ (sin tests) directo a build/dist
+run('npx tsc -p tsconfig.build.json');
+if (!skipObfuscation) run('node scripts/obfuscate.js build/dist');
 
-fs.cpSync(path.join(root, 'dist'), path.join(root, 'build', 'dist'), { recursive: true });
 for (const file of ['package.json', 'package-lock.json', 'ecosystem.config.js']) {
-    fs.copyFileSync(path.join(root, file), path.join(root, 'build', file));
+    fs.copyFileSync(path.join(root, file), path.join(build, file));
 }
 
-const archive = `pms_be_${VER}.tgz`;
-run(`tar -czf binaries/${archive} -C build .`);
-
-console.log(`Paquete generado: binaries/${archive}`);
+run(`tar -czf "${archive}" -C "${build}" .`);
+console.log(`Paquete generado: ${archive}`);

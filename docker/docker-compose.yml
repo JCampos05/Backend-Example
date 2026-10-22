@@ -1,0 +1,72 @@
+name: pms
+
+# Solo infraestructura: el backend corre en el host y se conecta por localhost.
+# Las credenciales vienen del .env de la raíz (ver comando en el README / instrucciones).
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secretpassword}
+      POSTGRES_DB: ${DB_NAME:-pms_db}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  # redis-stack-server incluye RedisJSON, que usa CacheUtil (json.get / json.set)
+  redis:
+    image: redis/redis-stack-server:latest
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+
+  # Broker de mensajería (cap. 16). Es opcional: el backend solo lo usa si RABBITMQ_URL está definida.
+  # Puerto 5672 = AMQP (la app) | 15672 
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  localstack:
+    image: localstack/localstack
+    restart: unless-stopped
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN}
+    volumes:
+      - localstack_data:/var/lib/localstack
+
+  ec2-sim:
+    build: ./ec2-sim
+    restart: unless-stopped
+    volumes:
+      - ./ec2-sim/mi_clave_ec2.pub:/tmp/authorized_key.pub:ro
+      - ec2_app:/home/ubuntu/pms-backend
+    ports:
+      - "2222:22"
+      - "3000:3000"
+
+volumes:
+  pg_data:
+  redis_data:
+  rabbitmq_data:
+  localstack_data:
+  ec2_app:
