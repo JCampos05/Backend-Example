@@ -1,7 +1,7 @@
 import { Express } from 'express';
 import { body } from 'express-validator';
 import { TaskController } from './tasks.controller';
-import { authorize } from '../../utils/auth.util';
+import { authorize, requirePermission } from '../../utils/auth.util';
 import { validate } from '../../utils/validator';
 import { Priority, Status } from './tasks.entity';
 
@@ -35,14 +35,14 @@ export class TaskRoutes {
         const c = new TaskController();
 
         app.route(this.baseEndPoint)
-            .get(authorize, c.getAllHandler)
-            .post(authorize, validate(taskRules(true)), c.addHandler);
+            .get(authorize, requirePermission('get_all_tasks'), c.getAllHandler)
+            .post(authorize, requirePermission('add_task'), validate(taskRules(true)), c.addHandler);
 
-        app.patch(`${this.baseEndPoint}/:id/status`, authorize, validate(validStatusInput), c.updateStatusHandler);
+        app.patch(`${this.baseEndPoint}/:id/status`, authorize, requirePermission('edit_task'), validate(validStatusInput), c.updateStatusHandler);
 
         app.route(`${this.baseEndPoint}/:id`)
-            .get(authorize, c.getOneHandler)
-            .put(authorize, validate(taskRules(false)), c.updateHandler)
-            .delete(authorize, c.deleteHandler);
+            .get(authorize, requirePermission('get_details_task'), c.getOneHandler)
+            .put(authorize, requirePermission('edit_task'), validate(taskRules(false)), c.updateHandler)
+            .delete(authorize, requirePermission('delete_task'), c.deleteHandler);
     }
 }

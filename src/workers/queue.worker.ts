@@ -1,16 +1,16 @@
-import Queue from 'bull';
 import { NotificationUtil } from '../utils/notification.util';
 
 export class QueueWorker {
-    private static emailQueue = new Queue('emailQueue', 'redis://127.0.0.1:6379');
-
     constructor() {
         console.log('[OK] Inicializando QueueWorker...');
     }
 
     public beginProcessing() {
+        // Misma cola (y misma conexión a Redis) que usa la API para encolar
+        const queue = NotificationUtil.emailQueue;
+
         // Definición del procesador de trabajos asíncronos
-        QueueWorker.emailQueue.process(async (job) => {
+        queue.process(async (job) => {
             try {
                 const { to, subject, body } = job.data;
                 const success = await NotificationUtil.sendEmail(to, subject, body);
@@ -21,7 +21,16 @@ export class QueueWorker {
                 console.log(`[OK] Correo enviado exitosamente a: ${to}`);
             } catch (error: any) {
                 console.error(`[ERROR] Error procesando trabajo #${job.id}: ${error.message}`);
-                throw error; // Re-lanzar para activar eventos de reintento de Bull
+                throw error; // Bull reintenta solo, según attempts/backoff de la cola
+            }
+        });
+
+        queue.on('failed', (job, err) => {
+            const max = job.opts.attempts ?? 1;
+            if (job.attemptsMade >= max) {
+                console.error(`[CRITICAL] Trabajo #${job.id} agotó sus ${max} intentos: ${err.message}`);
+            } else {
+                console.warn(`[WARN] Trabajo #${job.id} falló (intento ${job.attemptsMade} de ${max}); se reintentará.`);
             }
         });
     }

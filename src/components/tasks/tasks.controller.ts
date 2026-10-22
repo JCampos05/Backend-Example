@@ -8,6 +8,8 @@ import { buildCreateTaskUseCase } from '../../infraestructure/composition';
 import { DomainValidationError, NotFoundError } from '../../domain/errors';
 import { Task } from '../../domain/entities/task.model';
 import { EventPublisher, TaskEvents } from '../../messaging/event.publisher';
+import { Tasks, Priority, Status } from './tasks.entity';
+import { isUuid, oneOf, parseFilters } from '../../utils/filter.util';
 
 const forbidden = (res: Response, message: string): void => {
     res.status(403).json({ statusCode: 403, status: 'error', message });
@@ -72,7 +74,14 @@ export class TaskController {
 
     public async getAllHandler(req: Request, res: Response): Promise<void> {
         if (!hasPermission(req.user?.rights, 'get_all_tasks')) return forbidden(res, 'No tiene permisos para consultar tareas');
-        const result = await new TaskService().findAll(req.query);
+        const parsed = parseFilters(req.query, {
+            project_id: isUuid,
+            user_id: isUuid,
+            status: oneOf(Object.values(Status)),
+            priority: oneOf(Object.values(Priority)),
+        });
+        if ('error' in parsed) return void res.status(400).json({ statusCode: 400, status: 'error', message: parsed.error });
+        const result = await new TaskService().findAll(parsed.filters);
         res.status(result.statusCode).json(result);
     }
 
@@ -84,6 +93,12 @@ export class TaskController {
 
     public async updateHandler(req: Request, res: Response): Promise<void> {
         if (!hasPermission(req.user?.rights, 'edit_task')) return forbidden(res, 'No tiene permisos para editar tareas');
+        if (req.body && 'status' in req.body) {
+            return void res.status(400).json({
+                statusCode: 400, status: 'error',
+                message: 'El estado no se edita aquí: usa PATCH /api/tasks/:id/status',
+            });
+        }
         const result = await new TaskService().update(req.params.id as string, req.body);
         res.status(result.statusCode).json(result);
     }

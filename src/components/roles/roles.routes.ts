@@ -2,6 +2,7 @@ import { Express } from 'express';
 import { RoleController, RolesUtil } from './roles.controller';
 import { validate } from '../../utils/validator';
 import { body } from 'express-validator';
+import { authorize, requirePermission } from '../../utils/auth.util';
 
 const validRoleInput = [
     body('name').trim().notEmpty().withMessage('El nombre es obligatorio'),
@@ -25,13 +26,13 @@ export class RoleRoutes {
         const controller = new RoleController();
 
         app.route(this.baseEndPoint)
-            .get(controller.getAllHandler)
-            .post(validate(validRoleInput), controller.addHandler);
+            .get(authorize, requirePermission('get_all_roles'), controller.getAllHandler)
+            .post(authorize, requirePermission('add_role'), validate(validRoleInput), controller.addHandler);
 
         app.route(this.baseEndPoint + '/:id')
-            .get(controller.getDetailsHandler)
-            .put(validate(validRoleInput), controller.updateHandler)
-            .delete(controller.deleteHandler);
+            .get(authorize, requirePermission('get_details_role'), controller.getDetailsHandler)
+            .put(authorize, requirePermission('edit_role'), validate(validRoleInput), controller.updateHandler)
+            .delete(authorize, requirePermission('delete_role'), controller.deleteHandler);
     }
 }
 

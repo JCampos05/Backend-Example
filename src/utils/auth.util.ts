@@ -36,6 +36,14 @@ export const hasPermission = (userRights: string[] | undefined, requiredRight: s
     if (!userRights || !Array.isArray(userRights)) return false;
     return userRights.includes(requiredRight);
 };
+// Middleware: corta con 403 ANTES de validar el cuerpo (así un usuario sin permiso nunca ve errores de validación)
+export const requirePermission = (right: string) => (req: Request, res: Response, next: NextFunction) => {
+    if (!hasPermission(req.user?.rights, right)) {
+        return res.status(403).json({ statusCode: 403, status: 'error', message: 'No tiene permisos para realizar esta acción' });
+    }
+    next();
+};
+
 export class AuthUtil {
     public static generateAccessToken(payload: object): string {
         return jwt.sign(payload, SERVER_CONST.JWTSECRET, {

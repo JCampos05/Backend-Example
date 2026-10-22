@@ -24,19 +24,19 @@ export interface TaskState {
 
 export class NotStartedState implements TaskState {
     startWork(context: TaskContext): void { context.setState(new InProgressState()); }
-    complete(): void { throw new Error('Transición no permitida: la tarea debe iniciarse antes de completarse.'); }
+    complete(): void { throw new InvalidTransitionError('Transición no permitida: la tarea debe iniciarse antes de completarse.'); }
     getStatusName(): TaskStatus { return TaskStatus.NotStarted; }
 }
 
 export class InProgressState implements TaskState {
-    startWork(): void { throw new Error('La tarea ya está en progreso.'); }
+    startWork(): void { throw new InvalidTransitionError('La tarea ya está en progreso.'); }
     complete(context: TaskContext): void { context.setState(new CompletedState()); }
     getStatusName(): TaskStatus { return TaskStatus.InProgress; }
 }
 
 export class CompletedState implements TaskState {
-    startWork(): void { throw new Error('Tarea completada no admite cambios.'); }
-    complete(): void { throw new Error('La tarea ya está completada.'); }
+    startWork(): void { throw new InvalidTransitionError('Tarea completada no admite cambios.'); }
+    complete(): void { throw new InvalidTransitionError('La tarea ya está completada.'); }
     getStatusName(): TaskStatus { return TaskStatus.Completed; }
 }
 
@@ -45,7 +45,7 @@ const stateFromStatus = (status: string): TaskState => {
         case TaskStatus.NotStarted: return new NotStartedState();
         case TaskStatus.InProgress: return new InProgressState();
         case TaskStatus.Completed: return new CompletedState();
-        default: throw new Error(`Estado desconocido: ${status}`);
+        default: throw new InvalidTransitionError(`Estado desconocido: ${status}`);
     }
 };
 

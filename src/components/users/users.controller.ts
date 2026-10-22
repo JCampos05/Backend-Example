@@ -7,6 +7,7 @@ import { hasPermission, AuthUtil } from '../../utils/auth.util';
 import { NotificationUtil } from '../../utils/notification.util';
 import { DatabaseUtil } from '../../utils/db';
 import { CacheUtil } from '../../utils/cache.util';
+import { anyText, parseFilters } from '../../utils/filter.util';
 
 // Quita la contraseña de un usuario o de una lista de usuarios
 const sanitize = (data: any): any => {
@@ -39,8 +40,14 @@ export class UsersController {
     public async getAllHandler(req: Request, res: Response): Promise<void> {
         if (!hasPermission(req.user?.rights, 'get_all_users')) return forbidden(res, 'No tiene permisos para consultar usuarios');
 
+        const parsed = parseFilters(req.query, { username: anyText, email: anyText, fullname: anyText });
+        if ('error' in parsed) {
+            res.status(400).json({ statusCode: 400, status: 'error', message: parsed.error });
+            return;
+        }
+
         const service = new UsersService();
-        const result = await service.findAll(req.query);
+        const result = await service.findAll(parsed.filters);
 
         if (result.statusCode === 200) result.data = sanitize(result.data);
         res.status(result.statusCode).json(result);
@@ -157,7 +164,7 @@ export class UsersController {
             return;
         }
 
-        const resetToken = jwt.sign({ email: user.email }, SERVER_CONST.JWTSECRET, { expiresIn: '1h' });
+        const resetToken = jwt.sign({ email: user.email, purpose: 'reset' }, SERVER_CONST.JWTSECRET, { expiresIn: '1h' });
         const resetLink = `http://127.0.0.1:3000/reset-password?token=${resetToken}`;
         const html = `
             <h2>Hola ${user.fullname ?? user.username},</h2>
@@ -178,7 +185,9 @@ export class UsersController {
     public async resetPassword(req: Request, res: Response): Promise<void> {
         const { token, newPassword } = req.body;
         try {
-            const decoded = jwt.verify(token, SERVER_CONST.JWTSECRET) as { email: string };
+            const decoded = jwt.verify(token, SERVER_CONST.JWTSECRET) as { email: string; purpose?: string };
+            // Solo sirven los tokens emitidos por forgot-password: un token de sesión NO puede resetear la contraseña
+            if (decoded.purpose !== 'reset') throw new Error('Token no es de recuperación');
             const user = await UsersUtil.getUserByEmail(decoded.email);
             if (!user) {
                 res.status(404).json({ statusCode: 404, status: 'error', message: 'Usuario no encontrado' });

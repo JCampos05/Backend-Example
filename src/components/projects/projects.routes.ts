@@ -2,7 +2,7 @@ import { Express } from 'express';
 import { body } from 'express-validator';
 import { ProjectController } from './projects.controller';
 import { ProjectStatus } from './projects.entity';
-import { authorize } from '../../utils/auth.util';
+import { authorize, requirePermission } from '../../utils/auth.util';
 import { validate } from '../../utils/validator';
 
 const projectRules = (creating: boolean) => [
@@ -30,15 +30,15 @@ export class ProjectRoutes {
         const c = new ProjectController();
 
         // Ruta específica antes de '/:id'
-        app.post(`${this.baseEndPoint}/transaccion-atomica`, authorize, validate(projectRules(true)), c.addWithDefaultTaskHandler);
+        app.post(`${this.baseEndPoint}/transaccion-atomica`, authorize, requirePermission('add_project'), validate(projectRules(true)), c.addWithDefaultTaskHandler);
 
         app.route(this.baseEndPoint)
-            .get(authorize, c.getAllHandler)
-            .post(authorize, validate(projectRules(true)), c.addHandler);
+            .get(authorize, requirePermission('get_all_projects'), c.getAllHandler)
+            .post(authorize, requirePermission('add_project'), validate(projectRules(true)), c.addHandler);
 
         app.route(`${this.baseEndPoint}/:id`)
-            .get(authorize, c.getOneHandler)
-            .put(authorize, validate(projectRules(false)), c.updateHandler)
-            .delete(authorize, c.deleteHandler);
+            .get(authorize, requirePermission('get_details_project'), c.getOneHandler)
+            .put(authorize, requirePermission('edit_project'), validate(projectRules(false)), c.updateHandler)
+            .delete(authorize, requirePermission('delete_project'), c.deleteHandler);
     }
 }
